@@ -1,6 +1,6 @@
-# **Ferramenta de Verificação de Commitment RNG**
+# **Ferramenta de Verificação do SM Prêmios LTDA**
 
-Esta é uma ferramenta de linha de comando (CLI) desenvolvida em Python para verificar a integridade e a transparência de um sistema de Geração de Números Aleatórios (RNG) baseado em um esquema de _commitment_ criptográfico.
+Esta é uma ferramenta de linha de comando (CLI) desenvolvida em Python para verificar a integridade e a transparência dos sorteios, que utiliza um sistema de Geração de Números Aleatórios (RNG) baseado em um esquema de _commitment_ criptográfico.
 
 Ela permite que qualquer pessoa verifique de forma independente se um resultado aleatório foi gerado de maneira justa, provando que a "semente" (o dado secreto) que gera o resultado corresponde ao _commitment_ (promessa) público divulgado antes do evento ocorrer.
 
@@ -31,7 +31,7 @@ Para utilizar esta ferramenta, você precisará do Python 3.7+ instalado.
 
 ```
    # Se estivesse em um repositório git
-   git clone https://github.com/seu-usuario/verificador_rng.git
+   git clone https://github.com/BrenoLopesz/SM-Premios-CLI.git
    cd verificador_rng
 ```
 
@@ -50,11 +50,11 @@ Para utilizar esta ferramenta, você precisará do Python 3.7+ instalado.
 
 ## **Como Usar**
 
-A ferramenta é executada através do script cli.py, seguido por um dos comandos disponíveis.
+A ferramenta é executada através do script `cli.py`, seguido por um dos comandos disponíveis.
 
 ### **Comandos Disponíveis**
 
-#### **1. generate-commitment**
+#### **1. `generate-commitment`**
 
 Gera um hash de _commitment_ a partir de uma semente e metadados. Útil para testes e simulações.
 
@@ -67,7 +67,7 @@ python cli.py generate-commitment \
     --metadata-file "caminho/para/metadata.json"
 ```
 
-#### **2. check-match**
+#### **2. `check-match`**
 
 Verifica se uma semente em texto plano (revelada após o evento) corresponde ao _commitment_ público.
 
@@ -81,7 +81,7 @@ python cli.py check-match \
     --committed-hash "hash_publico_do_commitment_xyz"
 ```
 
-#### **3. verify-signature**
+#### **3. `verify-signature`**
 
 Verifica se a assinatura digital do _commitment_ é válida, provando sua autenticidade.
 
@@ -94,7 +94,7 @@ python cli.py verify-signature \
     --committed-hash "hash_publico_do_commitment_xyz"
 ```
 
-#### **4. verify-full-chain**
+#### **4. `verify-full-chain`**
 
 O comando mais completo. Ele descriptografa a semente, recalcula o hash e o compara com o _commitment_ original. Este é o principal teste de integridade para um observador externo.
 
@@ -111,8 +111,9 @@ python cli.py verify-full-chain \
     --decryption-key "chave_aes_para_descriptografar_a_semente"
 ```
 
-Nota de Segurança:  
-Para evitar expor a chave de descriptografia no histórico do seu terminal, é altamente recomendável defini-la como uma variável de ambiente. A ferramenta a detectará automaticamente.  
+**Nota de Segurança:**  
+Para evitar expor a chave de descriptografia no histórico do seu terminal, é altamente recomendável defini-la como uma variável de ambiente. A ferramenta a detectará automaticamente.
+
 **No Linux/macOS:**
 
 ```
@@ -125,16 +126,16 @@ export SEED_ENCRYPTION_KEY_HEX="sua_chave_aes_aqui"
 $env:SEED_ENCRYPTION_KEY_HEX="sua_chave_aes_aqui"
 ```
 
-Depois de definir a variável, você pode omitir o argumento --decryption-key do comando verify-full-chain.
+Depois de definir a variável, você pode omitir o argumento `--decryption-key` do comando `verify-full-chain`.
 
 ## **Como o Processo Funciona**
 
-1. **Commitment:** Antes de um evento aleatório, uma semente secreta é gerada. Um hash criptográfico (commitment) dessa semente, combinado com dados públicos (metadata e event-id), é calculado e publicado. Este hash é uma "promessa" de que a semente não será alterada.
-2. **Assinatura:** O commitment é assinado digitalmente com uma chave privada, provando que foi gerado por uma entidade autêntica.
-3. **Revelação:** Após o evento, a semente original é revelada.
+1. **Commitment:** Antes de um evento aleatório, uma `semente` secreta é gerada. Um hash criptográfico (`commitment`) dessa semente, combinado com dados públicos (`metadata` e `event-id`), é calculado e publicado. Este hash é uma "promessa" de que a semente não será alterada.
+2. **Assinatura:** O `commitment` é assinado digitalmente com uma chave privada, provando que foi gerado por uma entidade autêntica.
+3. **Revelação:** Após o evento, a `semente` original é revelada.
 4. **Verificação:** Qualquer pessoa pode usar esta ferramenta para:
-   - Verificar se a assinatura do commitment é válida.
+   - Verificar se a assinatura do `commitment` é válida.
    - Recalcular o hash usando a semente revelada e os metadados.
-   - Confirmar que o hash recalculado é idêntico ao commitment original.
+   - Confirmar que o hash recalculado é idêntico ao `commitment` original.
 
-Este processo garante que o resultado não foi manipulado, pois o commitment não pode ser alterado após sua publicação sem invalidar o hash.
+Este processo garante que o resultado não foi manipulado, pois o `commitment` não pode ser alterado após sua publicação sem invalidar o hash.
