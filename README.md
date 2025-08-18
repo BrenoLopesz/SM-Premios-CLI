@@ -111,6 +111,30 @@ python cli.py verify-full-chain \
     --decryption-key "chave_aes_para_descriptografar_a_semente"
 ```
 
+#### **5. `replicate-winners`**
+
+_O passo final da verificação de transparência_. Este comando usa a semente revelada e os detalhes do sorteio para reproduzir deterministicamente a lista exata de vencedores. Isso prova que o resultado não foi apenas derivado da semente correta, mas que o algoritmo de sorteio foi seguido fielmente.
+
+**Uso (com arquivo de detalhes):**
+
+```
+python cli.py replicate-winners \
+    --seed "semente_revelada_em_texto_plano" \
+    --sorteio-details-file "caminho/para/detalhes_do_sorteio.json" \
+    --output-file "resultado_replicado.json"
+```
+
+**Uso (com argumentos diretos):**
+Para sorteios simples ou testes, você pode passar os detalhes diretamente.
+
+```
+python cli.py replicate-winners \
+    --seed "semente_revelada_em_texto_plano" \
+    --quantidade-numeros 1000 \
+    --premio '{"documentId": "p-01", "Nome": "Prêmio A", "Quantidade": 1}' \
+    --premio '{"documentId": "p-02", "Nome": "Prêmio B", "Quantidade": 5}'
+```
+
 **Nota de Segurança:**  
 Para evitar expor a chave de descriptografia no histórico do seu terminal, é altamente recomendável defini-la como uma variável de ambiente. A ferramenta a detectará automaticamente.
 
@@ -137,5 +161,6 @@ Depois de definir a variável, você pode omitir o argumento `--decryption-key` 
    - Verificar se a assinatura do `commitment` é válida.
    - Recalcular o hash usando a semente revelada e os metadados.
    - Confirmar que o hash recalculado é idêntico ao `commitment` original.
+   - Finalmente, **usar a mesma semente para replicar o resultado do sorteio**, garantindo que a lista de vencedores é a consequência direta e determinística da semente prometida.
 
 Este processo garante que o resultado não foi manipulado, pois o `commitment` não pode ser alterado após sua publicação sem invalidar o hash.
