@@ -40,7 +40,7 @@ def main():
     parser_verify.add_argument("--committed-hash", required=True, help="O hash de commitment que foi assinado (hex).")
     parser_verify.set_defaults(func=commands.handle_verify_signature)
 
-    # --- NOVO: Sub-parser para 'verify-full-chain' ---
+    # --- Sub-parser para 'verify-full-chain' ---
     parser_full_chain = subparsers.add_parser(
         "verify-full-chain",
         help="Descriptografa uma seed, re-hasheia e verifica se corresponde ao hash de commitment original.",
@@ -71,6 +71,36 @@ Assim você pode omitir o argumento --decryption-key.
     parser_full_chain.add_argument("--committed-hash", required=True, help="O hash de commitment original (hex) para verificar.")
     parser_full_chain.add_argument("--debug", action="store_true", help="Imprime a string exata que está sendo hasheada para depuração.")
     parser_full_chain.set_defaults(func=commands.handle_verify_full_chain)
+
+    # --- NOVO: Sub-parser para 'replicate-winners' ---
+    parser_replicate = subparsers.add_parser(
+        "replicate-winners",
+        help="Replica a geração de vencedores a partir de uma seed e dos detalhes do sorteio.",
+        formatter_class=argparse.RawTextHelpFormatter,
+        description="""
+    Este comando executa a lógica de geração de vencedores de forma determinística.
+    Pode-se fornecer os detalhes do sorteio através de um arquivo JSON ou diretamente como argumentos.
+
+    Exemplo de Uso (com arquivo):
+    python seu_script.py replicate-winners \\
+        --seed "a1b2c3d4..." \\
+        --sorteio-details-file "detalhes_sorteio.json"
+
+    Exemplo de Uso (com argumentos individuais):
+    python seu_script.py replicate-winners \\
+        --seed "a1b2c3d4..." \\
+        --quantidade-numeros 1000 \\
+        --premio '{"documentId": "p1", "Nome": "Prêmio A", "Quantidade": 1}' \\
+        --premio '{"documentId": "p2", "Nome": "Prêmio B", "Quantidade": 5}'
+    """
+    )
+    parser_replicate.add_argument("--seed", required=True, help="A seed secreta revelada em TEXTO PLANO (hex).")
+    parser_replicate.add_argument("--sorteio-details-file", help="Caminho para o arquivo JSON contendo os detalhes do sorteio. Prevalece sobre os argumentos individuais.")
+    parser_replicate.add_argument("--quantidade-numeros", type=int, help="O número total de participantes. Necessário se o arquivo não for fornecido.")
+    parser_replicate.add_argument("--premio", action="append", help="Uma string JSON para um único prêmio. Use este argumento repetidamente para múltiplos prêmios. Necessário se o arquivo não for fornecido.")
+    parser_replicate.add_argument("--output-file", help="Opcional. Caminho para salvar os resultados dos vencedores em formato JSON.")
+    parser_replicate.set_defaults(func=commands.handle_replicate_winners)
+
 
 
     args = parser.parse_args()

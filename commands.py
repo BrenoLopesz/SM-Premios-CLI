@@ -114,3 +114,119 @@ def handle_verify_full_chain(args):
     else:
         print("\n❌ FALHA: Divergência de hash. A seed descriptografada não gera o hash de commitment original.")
         sys.exit(1)
+
+def handle_replicate_winners(args):
+    """
+    Executa a lógica de replicação de vencedores de forma determinística.
+    """
+    print("--- Replicando o Resultado do Sorteio ---")
+
+    sorteio_details = None
+
+    # Passo 1: Obter os detalhes do sorteio (de arquivo ou de argumentos)
+    print("Passo 1: Carregando e validando os detalhes do sorteio...")
+
+    if args.sorteio_details_file:
+        try:
+            with open(args.sorteio_details_file, 'r', encoding='utf-8') as f:
+                sorteio_details = json.load(f)
+            print(f"   ...Detalhes carregados do arquivo: '{args.sorteio_details_file}'")
+        except FileNotFoundError:
+            print(f"Erro: O arquivo de detalhes do sorteio '{args.sorteio_details_file}' não foi encontrado.", file=sys.stderr)
+            sys.exit(1)
+        except json.JSONDecodeError:
+            print(f"Erro: O arquivo '{args.sorteio_details_file}' não contém um JSON válido.", file=sys.stderr)
+            sys.exit(1)
+    elif args.quantidade_numeros is not None and args.premio is not None:
+        print("   ...Detalhes carregados dos argumentos da linha de comando.")
+        try:
+            premios_list = []
+            for premio_str in args.premio:
+                premio_obj = json.loads(premio_str)
+                if not isinstance(premio_obj, dict):
+                    raise TypeError(f"Cada prêmio deve ser um objeto JSON, mas foi recebido: {premio_str}")
+                premios_list.append(premio_obj)
+            
+            sorteio_details = {
+                "quantidadeNumeros": args.quantidade_numeros,
+                "premios": premios_list
+            }
+        except json.JSONDecodeError as e:
+            print(f"Erro: A string de prêmio fornecida não é um JSON válido: {e}", file=sys.stderr)
+            sys.exit(1)
+        except TypeError as e:
+            print(f"Erro: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print("Erro: Você deve fornecer os detalhes do sorteio.", file=sys.stderr)
+        print("   Use '--sorteio-details-file' OU use '--quantidade-numeros' e '--premio' juntos.", file=sys.stderr)
+        sys.exit(1)
+
+    # Validação da estrutura dos dados
+    if 'quantidadeNumeros' not in sorteio_details or 'premios' not in sorteio_details:
+        print("Erro: Os detalhes do sorteio devem conter as chaves 'quantidadeNumeros' e 'premios'.", file=sys.stderr)
+        sys.exit(1)
+    
+    quantidade_numeros = sorteio_details['quantidadeNumeros']
+    premios = sorteio_details['premios']
+    document_id = sorteio_details.get('documentId', 'N/A')
+    print(f"   ...Detalhes validados para o Sorteio ID: {document_id}")
+
+    # Passo 2: Inicializar o PRNG
+    print(f"Passo 2: Inicializando o gerador de números (PRNG) com o seed fornecido...")
+    prng = crypto_utils.create_deterministic_prng(args.seed)
+    print(f"   ...PRNG inicializado com seed: {args.seed[:16]}...")
+
+    # Passo 3: Preparar e embaralhar os dados
+    print("Passo 3: Preparando e embaralhando participantes e prêmios...")
+    participant_numbers = list(range(1, quantidade_numeros + 1))
+    flat_prize_list = [
+        {'documentId': p.get('documentId', 'N/A'), 'Nome': p.get('Nome', 'N/A')}
+        for p in premios for _ in range(p.get('Quantidade', 0))
+    ]
+    print(f"   ...{len(participant_numbers)} participantes e {len(flat_prize_list)} prêmios totais preparados.")
+    
+    crypto_utils.shuffle(participant_numbers, prng)
+    crypto_utils.shuffle(flat_prize_list, prng)
+    print("   ...Listas de participantes e prêmios embaralhadas deterministicamente.")
+
+    # Passo 4: Atribuir prêmios
+    print("Passo 4: Atribuindo prêmios aos vencedores...")
+    assigned_winnings = {}
+    total_prizes_to_award = len(flat_prize_list)
+
+    for i in range(total_prizes_to_award):
+        if i >= len(participant_numbers):
+            print(f"Aviso: Mais prêmios ({total_prizes_to_award}) do que participantes ({len(participant_numbers)}). Alguns prêmios não serão atribuídos.", file=sys.stderr)
+            break
+        
+        winning_number = str(participant_numbers[i])
+        prize_won = flat_prize_list[i]
+
+        if winning_number not in assigned_winnings:
+            assigned_winnings[winning_number] = []
+        assigned_winnings[winning_number].append(prize_won)
+
+    winners_generated_count = len(assigned_winnings)
+    print(f"   ...{total_prizes_to_award} prêmios atribuídos a {winners_generated_count} vencedores únicos.")
+
+    # Passo 5: Apresentar resultados
+    print("Passo 5: Gerando o resultado final...")
+    result_data = {
+        'winnersGeneratedCount': winners_generated_count,
+        'assignedWinnings': assigned_winnings
+    }
+
+    if args.output_file:
+        try:
+            with open(args.output_file, 'w', encoding='utf-8') as f:
+                json.dump(result_data, f, indent=4, ensure_ascii=False)
+            print(f"   ...Resultados salvos em '{args.output_file}'")
+        except IOError as e:
+            print(f"\n❌ FALHA: Erro ao salvar o arquivo de saída: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        print("\n--- Resultados da Replicação ---")
+        print(json.dumps(result_data, indent=2, ensure_ascii=False))
+
+    print("\n✅ SUCESSO: A replicação do sorteio foi concluída.")

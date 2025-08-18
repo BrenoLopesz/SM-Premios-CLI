@@ -6,6 +6,58 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.exceptions import InvalidSignature, InvalidTag
 
+
+def create_deterministic_prng(seed_hex):
+    """
+    Cria um gerador de números pseudoaleatórios (PRNG) determinístico usando um seed.
+
+    Args:
+        seed_hex: O seed inicial em formato hexadecimal.
+
+    Returns:
+        Uma função que, quando chamada, retorna um número pseudoaleatório entre 0 e 1.
+    """
+    # 1. CORRECT: Hash the plaintext seed string (encoded as UTF-8) to get the initial state.
+    #    This now matches the TypeScript implementation.
+    initial_hasher = hashlib.sha256()
+    initial_hasher.update(seed_hex.encode('utf-8'))
+    current_seed_bytes = initial_hasher.digest()
+
+    def prng() -> float:
+        nonlocal current_seed_bytes
+        # Generate a new hash from the current seed to get the next state
+        h = hashlib.sha256(current_seed_bytes)
+        next_hash_bytes = h.digest()
+
+        # Update the seed for the next iteration
+        current_seed_bytes = next_hash_bytes
+
+        # Convert the first 4 bytes of the hash to a number and normalize
+        hash_value = int.from_bytes(next_hash_bytes[:4], 'big')
+        return hash_value / 0x100000000  # 2**32
+
+    return prng
+
+    return prng
+
+def shuffle(items, prng) -> None:
+    """
+    Embaralha uma lista in-place usando o algoritmo Fisher-Yates (Knuth)
+    e um PRNG determinístico.
+
+    Args:
+        items: A lista a ser embaralhada.
+        prng: A função PRNG a ser usada para gerar índices.
+    """
+    current_index = len(items)
+    while current_index != 0:
+        # Escolhe um elemento restante
+        random_index = int(prng() * current_index)
+        current_index -= 1
+
+        # E o troca com o elemento atual
+        items[current_index], items[random_index] = items[random_index], items[current_index]
+
 def stable_stringify(data):
     """
     Cria uma string JSON consistente e ordenada a partir de um dicionário.
